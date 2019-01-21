@@ -32,6 +32,7 @@ fi
 
 echo "Now installing Varia's local mcl instance:"
 echo "Now installing Varia's local mcl instance:" >> Varia_install_log.txt
+unzip $DIR/tools/mcl/mcl-master.zip
 cd $DIR/tools/mcl/mcl-master
 sh ./configure --prefix=$DIR/tools/mcl
 make
@@ -42,6 +43,7 @@ cd $DIR
 
 echo "Now installing Varia's local circos instance:"
 echo "Now installing Varia's local circos instance:" >> Varia_install_log.txt
+unzip $DIR/tools/circos/circos-0.69-6.zip
 chmod 755 $DIR/tools/circos/circos-0.69-6/bin/circos
 
 echo "Installation complete: please add $DIR to your PATH before running Varia.sh"
