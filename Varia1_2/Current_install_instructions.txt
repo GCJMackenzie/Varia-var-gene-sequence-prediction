@@ -1,0 +1,14 @@
+Download Varia
+unzip in directory you want to install Varia in
+cd Varia1_1
+run Install_proto.sh, will check if Varia can find blastn and samtools on your path
+should also install mcl
+if mcl installation fails:
+	cd tools/mcl/mcl-master
+	sh ./configure (PATH to Varia1_1)/Varia1_1/tools/mcl
+	make
+	? make check
+	make install
+	? make clear
+[ Circos instructions here ]
+Add PATH to $PATH should be reported at the end of Install_proto.sh and stored in Varia_install_log.txt
