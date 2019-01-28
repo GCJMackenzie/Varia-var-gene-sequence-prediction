@@ -1,12 +1,52 @@
-#!/bin/sh
+#!/bin/bash
 
 ## 1. Add the path to Varia1_1 directory to your pathway
 ## 2. Run script with command line: Varia.sh <name of fasta file> <identity value for initial blast>
 
 ##obtains current path to Varia directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if [ "$1" = "" ]
+then
+	echo "No filename specified, input should be: Varia.sh [input_file.fasta] [identity score]"
+	exit
+fi
+CHECK=$(echo $1 | cut -d '.' -f2)
+if [ "$CHECK" != "fasta" ]
+then
+	echo "filename is not in a fasta format, input should be: Varia.sh [input_file.fasta] [identity score]"
+	exit
+fi
+
+CHECK=$(head $1)
+if [ "$CHECK" = '' ]
+then
+	echo "No file called $1 was found in this directory"
+	exit
+fi
 FILE=$(basename $1 .fasta)
+
+
+
 IDENT=$2
+if [ "$IDENT" = "" ]
+then
+	echo "No Identity score detected, input should be: Varia.sh [input_file.fasta] [identity score]"
+	exit
+fi
+
+
+if ! echo $IDENT | egrep -q '^[0-9]+$';
+then
+	echo "Identity score must be an integer between 1 and 100, input should be: Varia.sh [input_file.fasta] [identity score]"
+	exit
+fi
+
+if [ $IDENT -gt 100 ] || [ $IDENT -lt 1 ]
+then
+	echo "Identity score out of range, keep identity score between 1 and 100"
+	exit
+fi
+
 ##makes directories to sort output files 
 mkdir ./$FILE-$IDENT-Varia_Out
 ##mkdir ./$FILE-$IDENT-Varia_Out/aln_files
@@ -51,14 +91,14 @@ do
 	##sample is blast searched against the database, then the length of the sequence is added
 	blastn -task megablast -dust no -num_threads 8 -outfmt 6 -evalue 1e-80 -max_target_seqs 2000  -db $DIR/vardb/vardb -query $NAME.fasta -out $NAME.blast
 	
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/Pf3K.vargenes.na.fasta $NAME.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/varDB.version3.fasta $NAME.blast
 	
 	##fasta index made for temp fasta file
 	samtools faidx $NAME.fasta
 	
 	##genes of interest added to genes.fasta file
 	n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-	samtools faidx $DIR/vardb/Pf3K.vargenes.na.fasta $n >> $NAME.genes.fasta
+	samtools faidx $DIR/vardb/varDB.version3.fasta $n >> $NAME.genes.fasta
 	##cat $NAME.fasta >> $NAME.genes.fasta
 	BLAST=$(awk '$3>99 && $4>200' $NAME.blast | wc -l)
 
@@ -70,7 +110,7 @@ do
 
 	
 	## mcl forms cluster groups of the genes
-	$DIR/tools/mcl/bin/mcl $NAME.formcl.txt  --abc -o $NAME.clusters.txt
+	mcl $NAME.formcl.txt  --abc -o $NAME.clusters.txt
 	
 	##finds total number of lines in cluster file
 	CTOT=$(wc -l $NAME.clusters.txt| head -n1| awk '{print $1;}')
@@ -145,7 +185,7 @@ do
 	RANGE=0${RANGE}r
 
 	##Circos plot generated
-	$DIR/tools/circos/circos-0.69-6/bin/circos -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.untwin_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_max=$NAME.axis_label_max.txt -param max=$MAX -param range=$RANGE -outputfile $NAME.circos.plot.png
+	circos -silent -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.untwin_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_max=$NAME.axis_label_max.txt -param max=$MAX -param range=$RANGE -outputfile $NAME.circos.plot.png
 	
 	##cluster summary genrated
 	python $DIR/scripts/get_clusters.py $NAME $DIR

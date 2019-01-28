@@ -32,14 +32,14 @@ c = (len(store) - 1)
 if(n < len(store)):
     mid = c - n
     if(mid % 2 == 1):
-        med1 = store[n + (mid / 2)][2]
-        med2 = store[n + (mid / 2) + 1][2]
-        med = (int(med1) + int(med2)) / 2
+        med1 = store[n + int(mid / 2)][2]
+        med2 = store[n + int(mid / 2) + 1][2]
+        med = int((int(med1) + int(med2)) / 2)
         med = store[n][0] + '\t' + str(n) + '\t' + str(c) + '\t' + str(med)
         coveragestore.append(med)
 
     else:
-        med1 = ((mid / 2))
+        med1 = int(((mid / 2)))
         med = store[n + med1][2]
         med = store[n][0] + '\t' + str(n) + '\t' + str(c) + '\t' + str(med)
         coveragestore.append(med)

@@ -25,11 +25,12 @@ file.close()
 'opens the coverage file for current sample and stores contents as an array'
 filename = "./" + name + ".Plot.median.coverage.plot"
 c = 0
+temp = ''
 file = open(filename,"r")
 for line in file:
     line = line.split('\t')
     coveragestore.append([line[0]])
-    coveragestore[c].append(int(line[3][0:(len(line) -1)]))
+    coveragestore[c].append(int(float(line[3][0:(len(line) -1)])))
     c = c + 1
 file.close()
 
