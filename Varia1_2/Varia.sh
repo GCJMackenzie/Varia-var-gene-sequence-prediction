@@ -91,14 +91,14 @@ do
 	##sample is blast searched against the database, then the length of the sequence is added
 	blastn -task megablast -dust no -num_threads 8 -outfmt 6 -evalue 1e-80 -max_target_seqs 2000  -db $DIR/vardb/vardb -query $NAME.fasta -out $NAME.blast
 	
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/varDB.version3.fasta $NAME.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/Pf3K.vargenes.na.fasta $NAME.blast
 	
 	##fasta index made for temp fasta file
 	samtools faidx $NAME.fasta
 	
 	##genes of interest added to genes.fasta file
 	n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-	samtools faidx $DIR/vardb/varDB.version3.fasta $n >> $NAME.genes.fasta
+	samtools faidx $DIR/vardb/Pf3K.vargenes.na.fasta $n >> $NAME.genes.fasta
 	##cat $NAME.fasta >> $NAME.genes.fasta
 	BLAST=$(awk '$3>99 && $4>200' $NAME.blast | wc -l)
 
