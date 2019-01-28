@@ -1,11 +1,15 @@
 1. Download Varia
 2. unzip in directory you want to install Varia in
 3. enter Varia1_2 directory
-4. run Install_proto.sh, this will:
+4. run the commands:
+	chmod 755 Install_proto.sh
+	chmod 755 Varia.sh
+	these ensure that the scripts have the right permissions, which the install_proto script needs to be to allow it to run conda
+5. run Install_proto.sh, this will:
 	check if Varia can find blastn, either stating the path to the version it will use or tell the user to intall blastn
 	check if Varia can find samtools either stating the path to the version it will use or telling the user to install samtools
 	check if Varia can find mcl, if it cant it will ask if the user wants to automatically install it with conda. If it can find mcl, then it will print the path to the version it will use
 	check if Varia can find circos, if it cant it will ask if the user wants to automatically install it with conda. If it can find circos, then it will print the path to the version it will use
 	report the PATH to Varia1_2 that the user should add to their PATH
 	Generate a log file summarising the installation
-5. Add the Varia1_2 directory to your PATH
+6. Add the Varia1_2 directory to your PATH
