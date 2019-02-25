@@ -26,7 +26,7 @@ file.close()
 
 n = 0
 'adds the contents of subdomains file to array'    
-filename = Dir + "/domains/PacBio.domains.txt"
+filename = Dir + "/domains/vardb_domains.txt"
 file = open(filename,"r")
 for line in file:
     line = line[0:(len(line) -1)]    

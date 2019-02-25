@@ -163,6 +163,7 @@ while [ $COUNT -lt $TOT ]
 do
 	##sample name extracted from names.txt
 	NAME=$(awk -v line="$COUNT" 'NR==line {print}' names.txt| head -n1| cut -d ">" -f2)
+	echo "now working on sample: $NAME"
 	##the line where the sample begins is set
 	BLINE=$(awk -v line="$COUNT" 'NR==line {print}' names.txt| head -n1| cut -d ":" -f1)
 	
@@ -176,14 +177,14 @@ do
 	##sample is blast searched against the database, then the length of the sequence is added
 	blastn -task megablast -dust no -outfmt 6 -evalue 1e-80 -max_target_seqs 2000  -db $DIR/vardb/vardb -query $NAME.fasta -out $NAME.blast
 	
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/Pf3K.vargenes.na.fasta $NAME.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/vardb.fasta $NAME.blast
 	
 	##fasta index made for temp fasta file
 	samtools faidx $NAME.fasta
 	
 	##genes of interest added to genes.fasta file
 	n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-	samtools faidx $DIR/vardb/Pf3K.vargenes.na.fasta $n >> $NAME.genes.fasta
+	samtools faidx $DIR/vardb/vardb.fasta $n >> $NAME.genes.fasta
 	##cat $NAME.fasta >> $NAME.genes.fasta
 	BLAST=$(awk '$3>99 && $4>200' $NAME.blast | wc -l)
 
@@ -193,7 +194,7 @@ do
 	blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $NAME.genes.fasta -query $NAME.genes.fasta -out $NAME.Self.blast
 	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.genes.fasta $NAME.genes.fasta $NAME.Self.blast
 	##genes to be passed to mcl added to txt file
-	awk '$3>99 &&  ($4>= (0.8*$13) || $4 >= (0.8*$14) )' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
+	awk '$3>99&& ($4>= (0.8*13) || $4 >= (0.8*$14))' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
 
 	echo "Clustering with mcl."	
 	## mcl forms cluster groups of the genes
@@ -239,9 +240,9 @@ do
 
 	
 	##adds blast entries to the links file then re-orders the columns into correct format for the link file
-	awk '$3>99 && $4>200 && $1!=$2' $NAME.link.blast.length  | cut -f 1,7,8,2,9,10 >> $NAME.links.txt
+	##awk -v identity="$IDENT" '$3>identity && $4>200 && $1!=$2' $NAME.link.blast.length | cut -f 1,7,8,2,9,10 >> $NAME.links.txt
+	awk -v identity="$IDENT" '$3>99 && $4>200 && $1!=$2' $NAME.link.blast.length | cut -f 1,7,8,2,9,10 >> $NAME.links.txt
 	awk '{print $1 "\t" $3 "\t" $4 "\t" $2 "\t" $5 "\t" $6}' $NAME.links.txt > $NAME.linked.txt
-	
 	## colour added to links using add_color.py
 	python $DIR/scripts/add_color.py $NAME
 	
@@ -281,7 +282,7 @@ do
 	
 	##each cluster is blast searched against its largest sequence to help find how many samples in the cluster are 80% length of the largest sequence
 	while read p; do
-	blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $p.db_seq.txt -query $p.query_seq.txt -out $p.80.blast
+		blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $p.db_seq.txt -query $p.query_seq.txt -out $p.80.blast
 		
 	done <$NAME.listclust.txt
 	
@@ -291,9 +292,9 @@ do
 	echo "Removing temporary files and organising files."
 	##sample specific temporary files deleted
 	while read p; do
-	rm $p.80.blast
-	rm $p.query_seq.txt
-	rm $p.db_seq.txt
+		rm $p.80.blast
+		rm $p.query_seq.txt
+		rm $p.db_seq.txt
 	done <$NAME.listclust.txt
 	rm $NAME.listclust.txt
 	rm plotme.txt
@@ -329,6 +330,7 @@ do
 	mv $NAME.cluster_summary.txt ./$FILE-$IDENT-Varia_Out/summaries/$NAME.cluster_summary.txt
 	mv $NAME.final_summary.txt ./$FILE-$IDENT-Varia_Out/summaries/$NAME.final_summary.txt
 	COUNT=$((COUNT +1))
+	echo ""
 done
 
 ##remaining temporary files removed
@@ -341,7 +343,6 @@ fi
 
 ##summary file moved into the Varia1_Out directory
 mv mcl_summary_$FILE.txt ./$FILE-$IDENT-Varia_Out/summaries/mcl_summary_$FILE.txt
-echo ""
 echo ""
 echo "Done!"
 echo ""

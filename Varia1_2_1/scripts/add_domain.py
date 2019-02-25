@@ -24,7 +24,7 @@ file.close()
 
 
 'opens the domain annotation file and finds entries that have matching names to the names in chromosome array and puts them in labelstore array'
-filename = path + "/domains/PacBio.domains.txt"
+filename = path + "/domains/vardb_domains.txt"
 n = 0
 c = 0
 while(n < len(store)):
@@ -47,7 +47,7 @@ while(n < len(labelstore)):
     for line in file:
         line = line.split('\t')
 
-        if(line[0] in labelstore[n][3][:(len(labelstore[n][3]) - 1)]):
+        if(line[0] in labelstore[n][3][:(len(labelstore[n][3]) - 1)] or line[0] == labelstore[n][3][:(len(labelstore[n][3]) - 1)] or labelstore[n][3][:(len(labelstore[n][3]) - 1)] in line[0]):
             labelstore[n].append(line[1])
     file.close()
     n = n + 1
@@ -62,7 +62,6 @@ filename = "./"+name+".domains.txt"
 file = open(filename, 'w')
 
 while(n < len(labelstore)):
-##    print(labelstore[n])
     writeline = labelstore[n][0] + '\t' + labelstore[n][1] + '\t' + labelstore[n][2] + '\t' + "1" + '\t' + labelstore[n][4] + '\n'
     file.write(writeline)
     n = n + 1
@@ -70,7 +69,7 @@ file.close()
 
 'adds contents of subdomains file to array where the identifier matches the cluster ID'
 subdomainstore = []
-filename = path + "/domains/PacBio.domains.txt"
+filename = path + "/domains/vardb_domains.txt"
 n = 0
 c = 0
 while(n < len(store)):
