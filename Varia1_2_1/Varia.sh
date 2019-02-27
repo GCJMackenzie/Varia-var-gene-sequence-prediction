@@ -175,26 +175,27 @@ do
 	awk -v first="$BLINE" -v last="$ELINE" 'NR>=first&&NR<=last' $FILE.alt.fasta > $NAME.fasta
 	
 	##sample is blast searched against the database, then the length of the sequence is added
-	blastn -task megablast -dust no -outfmt 6 -evalue 1e-80 -max_target_seqs 2000  -db $DIR/vardb/vardb -query $NAME.fasta -out $NAME.blast
-	
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/vardb.fasta $NAME.blast
+
+	megablast  -e 1e-10 -m 8 -F F -d $DIR/vardb/megadb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/megadb/megavardb.fasta $NAME.blast
 	
 	##fasta index made for temp fasta file
 	samtools faidx $NAME.fasta
 	
 	##genes of interest added to genes.fasta file
 	n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-	samtools faidx $DIR/vardb/vardb.fasta $n >> $NAME.genes.fasta
+	samtools faidx $DIR/vardb/megadb/megavardb.fasta $n >> ${NAME}_genes.fasta
 	##cat $NAME.fasta >> $NAME.genes.fasta
 	BLAST=$(awk '$3>99 && $4>200' $NAME.blast | wc -l)
 
 	echo "Generating cluster values."
 
 	##genes file blast searched against itself and lengths added
-	blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $NAME.genes.fasta -query $NAME.genes.fasta -out $NAME.Self.blast
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.genes.fasta $NAME.genes.fasta $NAME.Self.blast
+	formatdb -i ${NAME}_genes.fasta -p F -o T -t ${NAME}_db.fasta
+	megablast  -e 1e-10 -m 8 -F F -d ${NAME}_genes.fasta -i ${NAME}_genes.fasta -o $NAME.Self.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_genes.fasta ${NAME}_genes.fasta $NAME.Self.blast
 	##genes to be passed to mcl added to txt file
-	awk '$3>99&& ($4>= (0.8*13) || $4 >= (0.8*$14))' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
+	awk '$3>99&& ($4>= (0.8*$13) || $4 >= (0.8*$14))' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
 
 	echo "Clustering with mcl."	
 	## mcl forms cluster groups of the genes
@@ -229,11 +230,13 @@ do
 	CRESULT="$NAME has $CCLUSTER cluster(s) and $CSINGLE lone match(es)."
 	echo $CRESULT >> mcl_summary_$FILE.txt
 	##runs the pythonsort script to make the chromosomes file for sample and the fasta file for blast to use to make a links file
+	mv ${NAME}_genes.fasta $NAME.genes.fasta
 	python $DIR/scripts/pythonsort.py $NAME
-	
+	mv $NAME.forblast.fasta ${NAME}_forblast.fasta
+	formatdb -i ${NAME}_forblast.fasta -p F -o T -t ${NAME}_forblast.fasta
 	##blast run to perform self comparison of fasta file generated from pythonsort
-	blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $NAME.forblast.fasta -query $NAME.forblast.fasta -out $NAME.link.blast
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.forblast.fasta $NAME.forblast.fasta $NAME.link.blast
+	megablast  -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i ${NAME}_forblast.fasta -o $NAME.link.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_forblast.fasta ${NAME}_forblast.fasta $NAME.link.blast
 
 	##runs the labelfile python script to create file containing domain names for sample
 	python $DIR/scripts/add_domain.py $NAME $DIR
@@ -279,13 +282,13 @@ do
 	echo "Generating summary files."
 	##cluster summary genrated
 	python $DIR/scripts/get_clusters.py $NAME $DIR
-	
 	##each cluster is blast searched against its largest sequence to help find how many samples in the cluster are 80% length of the largest sequence
 	while read p; do
-		blastn -task megablast -dust no -outfmt 6 -evalue 1e-40 -max_target_seqs 2000  -subject $p.db_seq.txt -query $p.query_seq.txt -out $p.80.blast
-		
+		mv $p.db_seq.txt ${p}_db_seq.fasta
+		mv $p.query_seq.txt ${p}_query_seq.fasta
+		formatdb -i ${p}_db_seq.fasta -p F -o T -t ${p}_db_seq.fasta
+		megablast  -e 1e-10 -m 8 -F F -d ${p}_db_seq.fasta -i ${p}_query_seq.fasta -o $p.80.blast
 	done <$NAME.listclust.txt
-	
 	##final summary file generated
 	python $DIR/scripts/give_final.py $NAME
 	
@@ -293,11 +296,26 @@ do
 	##sample specific temporary files deleted
 	while read p; do
 		rm $p.80.blast
-		rm $p.query_seq.txt
-		rm $p.db_seq.txt
+		rm ${p}_query_seq.fasta
+		rm ${p}_db_seq.fasta
+		rm ${p}_db_seq.fasta.nsq
+		rm ${p}_db_seq.fasta.nsi
+		rm ${p}_db_seq.fasta.nsd
+		rm ${p}_db_seq.fasta.nin
+		rm ${p}_db_seq.fasta.nhr
 	done <$NAME.listclust.txt
 	rm $NAME.listclust.txt
 	rm plotme.txt
+	rm ${NAME}_forblast.fasta.nhr
+	rm ${NAME}_forblast.fasta.nin
+	rm ${NAME}_forblast.fasta.nsd
+	rm ${NAME}_forblast.fasta.nsi
+	rm ${NAME}_forblast.fasta.nsq
+	rm ${NAME}_genes.fasta.nhr
+	rm ${NAME}_genes.fasta.nin
+	rm ${NAME}_genes.fasta.nsd
+	rm ${NAME}_genes.fasta.nsi
+	rm ${NAME}_genes.fasta.nsq
 	##sample specific temporary files moved to filedump directory
 	mv $NAME.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.fasta
 	mv $NAME.fasta.fai ./$FILE-$IDENT-Varia_Out/filedump/$NAME.fasta.fai
@@ -306,7 +324,7 @@ do
 	mv $NAME.formcl.txt ./$FILE-$IDENT-Varia_Out/filedump/$NAME.formcl.txt
 	mv $NAME.genes.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.genes.fasta
 	mv $NAME.Self.blast ./$FILE-$IDENT-Varia_Out/filedump/$NAME.Self.blast
-	mv $NAME.forblast.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.forblast.fasta
+	mv ${NAME}_forblast.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.forblast.fasta
 	mv $NAME.link.blast ./$FILE-$IDENT-Varia_Out/filedump/$NAME.link.blast
 	mv $NAME.link.blast.length ./$FILE-$IDENT-Varia_Out/filedump/$NAME.link.blast.length
 	mv $NAME.links.txt ./$FILE-$IDENT-Varia_Out/filedump/$NAME.links.txt
@@ -336,6 +354,7 @@ done
 ##remaining temporary files removed
 rm names.txt
 rm $FILE.alt.fasta
+rm formatdb.log
 if [ "$HERECHECK" = "" ]
 then
 	rm ./$FILE.fasta

@@ -1,19 +1,19 @@
 #!/bin/bash
 
-## 1. Add the path to Varia1_1 directory to your pathway
-## 2. Run script with command line: Varia.sh <name of fasta file> <identity value for initial blast>
+## 1. Add the path to Varia1_2_1 directory to your pathway
+## 2. Run script with command line: Varia_n.sh <name of fasta file> <identity value for initial blast>
 
 ##obtains current path to Varia directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [ "$1" = "" ]
 then
-	echo "No filename specified, input should be: Varia.sh [input_file.fasta] [identity score]"
+	echo "No filename specified, input should be: Varia_n.sh [input_file.fasta] [identity score]"
 	exit
 fi
 CHECK=$(echo $1 | cut -d '.' -f2)
 if [ "$CHECK" != "fasta" ]
 then
-	echo "filename is not in a fasta format, input should be: Varia.sh [input_file.fasta] [identity score]"
+	echo "filename is not in a fasta format, input should be: Varia_n.sh [input_file.fasta] [identity score]"
 	exit
 fi
 
@@ -36,14 +36,14 @@ fi
 IDENT=$2
 if [ "$IDENT" = "" ]
 then
-	echo "No Identity score detected, input should be: Varia.sh [input_file.fasta] [identity score]"
+	echo "No Identity score detected, input should be: Varia_n.sh [input_file.fasta] [identity score]"
 	exit
 fi
 
 
 if ! echo $IDENT | egrep -q '^[0-9]+$';
 then
-	echo "Identity score must be an integer between 1 and 100, input should be: Varia.sh [input_file.fasta] [identity score]"
+	echo "Identity score must be an integer between 1 and 100, input should be: Varia_n.sh [input_file.fasta] [identity score]"
 	exit
 fi
 
@@ -55,30 +55,30 @@ fi
 
 echo "Setting up environment."
 ##makes directories to sort output files
-DIRCHECK=$(ls -F | grep $FILE-$IDENT-Megavar_Out)
+DIRCHECK=$(ls -F | grep $FILE-$IDENT-Varia_n_Out)
 if [ "$DIRCHECK" = "" ]
 then
-	mkdir ./$FILE-$IDENT-Megavar_Out
-	mkdir ./$FILE-$IDENT-Megavar_Out/cluster_files
-	mkdir ./$FILE-$IDENT-Megavar_Out/length
-	mkdir ./$FILE-$IDENT-Megavar_Out/chromosomes
-	mkdir ./$FILE-$IDENT-Megavar_Out/links
-	mkdir ./$FILE-$IDENT-Megavar_Out/labels
-	mkdir ./$FILE-$IDENT-Megavar_Out/domains
-	mkdir ./$FILE-$IDENT-Megavar_Out/coverage
-	mkdir ./$FILE-$IDENT-Megavar_Out/filedump
-	mkdir ./$FILE-$IDENT-Megavar_Out/plots
-	mkdir ./$FILE-$IDENT-Megavar_Out/axis
-	mkdir ./$FILE-$IDENT-Megavar_Out/axis_label
-	mkdir ./$FILE-$IDENT-Megavar_Out/summaries
+	mkdir ./$FILE-$IDENT-Varia_n_Out
+	mkdir ./$FILE-$IDENT-Varia_n_Out/cluster_files
+	mkdir ./$FILE-$IDENT-Varia_n_Out/length
+	mkdir ./$FILE-$IDENT-Varia_n_Out/chromosomes
+	mkdir ./$FILE-$IDENT-Varia_n_Out/links
+	mkdir ./$FILE-$IDENT-Varia_n_Out/labels
+	mkdir ./$FILE-$IDENT-Varia_n_Out/domains
+	mkdir ./$FILE-$IDENT-Varia_n_Out/coverage
+	mkdir ./$FILE-$IDENT-Varia_n_Out/filedump
+	mkdir ./$FILE-$IDENT-Varia_n_Out/plots
+	mkdir ./$FILE-$IDENT-Varia_n_Out/axis
+	mkdir ./$FILE-$IDENT-Varia_n_Out/axis_label
+	mkdir ./$FILE-$IDENT-Varia_n_Out/summaries
 else
-	echo "An oputput directory named $FILE-$IDENT-Megavar_Out is already present"
-	read -n1 -p "Do you wish for Varia to overwrite the contents of $FILE-$IDENT-Megavar_Out? [y,n]" doit
+	echo "An oputput directory named $FILE-$IDENT-Varia_n_Out is already present"
+	read -n1 -p "Do you wish for Varia_n to overwrite the contents of $FILE-$IDENT-Varia_n_Out? [y,n]" doit
 		case $doit in
 			y|Y) 
 			echo ""
-			echo "Varia will now overwrite $FILE-$IDENT-Megavar_Out"
-			cd ./$FILE-$IDENT-Megavar_Out
+			echo "Varia_n will now overwrite $FILE-$IDENT-Varia_n_Out"
+			cd ./$FILE-$IDENT-Varia_n_Out
 			DIRCHECK=$(ls -F | grep cluster_files)
 			if [ "$DIRCHECK" = "" ]
 			then
@@ -142,7 +142,7 @@ else
 			cd .. ;;
 			n|N)
 			echo ""
-			echo "Please move $FILE-$IDENT-Megavar_Out to a new directory or rename input file"
+			echo "Please move $FILE-$IDENT-Varia_n_Out to a new directory or rename input file"
 			exit ;;
 		esac
 fi
@@ -175,27 +175,26 @@ do
 	awk -v first="$BLINE" -v last="$ELINE" 'NR>=first&&NR<=last' $FILE.alt.fasta > $NAME.fasta
 	
 	##sample is blast searched against the database, then the length of the sequence is added
-
-	megablast  -e 1e-80 -m 8 -F F -d $DIR/vardb/megadb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/megadb/megavardb.fasta $NAME.blast
+	blastn -task megablast -dust no -outfmt 6 -evalue 1e-10 -max_target_seqs 2000  -db $DIR/vardb/vardb -query $NAME.fasta -out $NAME.blast
+	
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/vardb.fasta $NAME.blast
 	
 	##fasta index made for temp fasta file
 	samtools faidx $NAME.fasta
 	
 	##genes of interest added to genes.fasta file
 	n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-	samtools faidx $DIR/vardb/megadb/megavardb.fasta $n >> ${NAME}_genes.fasta
+	samtools faidx $DIR/vardb/vardb.fasta $n >> $NAME.genes.fasta
 	##cat $NAME.fasta >> $NAME.genes.fasta
 	BLAST=$(awk '$3>99 && $4>200' $NAME.blast | wc -l)
 
 	echo "Generating cluster values."
 
 	##genes file blast searched against itself and lengths added
-	formatdb -i ${NAME}_genes.fasta -p F -o T -t ${NAME}_db.fasta
-	megablast  -e 1e-40 -m 8 -F F -d ${NAME}_genes.fasta -i ${NAME}_genes.fasta -o $NAME.Self.blast
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_genes.fasta ${NAME}_genes.fasta $NAME.Self.blast
+	blastn -task megablast -dust no -outfmt 6 -evalue 1e-10 -max_target_seqs 2000  -subject $NAME.genes.fasta -query $NAME.genes.fasta -out $NAME.Self.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.genes.fasta $NAME.genes.fasta $NAME.Self.blast
 	##genes to be passed to mcl added to txt file
-	awk '$3>99&& ($4>= (0.8*13) || $4 >= (0.8*$14))' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
+	awk '$3>99&& ($4>= (0.8*$13) || $4 >= (0.8*$14))' $NAME.Self.blast.length  | cut -f 1,2,4 > $NAME.formcl.txt
 
 	echo "Clustering with mcl."	
 	## mcl forms cluster groups of the genes
@@ -230,13 +229,11 @@ do
 	CRESULT="$NAME has $CCLUSTER cluster(s) and $CSINGLE lone match(es)."
 	echo $CRESULT >> mcl_summary_$FILE.txt
 	##runs the pythonsort script to make the chromosomes file for sample and the fasta file for blast to use to make a links file
-	mv ${NAME}_genes.fasta $NAME.genes.fasta
 	python $DIR/scripts/pythonsort.py $NAME
-	mv $NAME.forblast.fasta ${NAME}_forblast.fasta
-	formatdb -i ${NAME}_forblast.fasta -p F -o T -t ${NAME}_forblast.fasta
+	
 	##blast run to perform self comparison of fasta file generated from pythonsort
-	megablast  -e 1e-40 -m 8 -F F -d ${NAME}_forblast.fasta -i ${NAME}_forblast.fasta -o $NAME.link.blast
-	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_forblast.fasta ${NAME}_forblast.fasta $NAME.link.blast
+	blastn -task megablast -dust no -outfmt 6 -evalue 1e-10 -max_target_seqs 2000  -subject $NAME.forblast.fasta -query $NAME.forblast.fasta -out $NAME.link.blast
+	perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.forblast.fasta $NAME.forblast.fasta $NAME.link.blast
 
 	##runs the labelfile python script to create file containing domain names for sample
 	python $DIR/scripts/add_domain.py $NAME $DIR
@@ -257,7 +254,7 @@ do
 		for x in depth.$p.plot; do
 		python $DIR/scripts/give_median.py $x 
 		done
-		mv depth.$p.plot ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.depth.$p.plot
+		mv depth.$p.plot ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.depth.$p.plot
 		##adds each clusters coverage file to the main coverage file for Circos
 		cat plotme.txt >> $NAME.Plot.median.coverage.plot
 	done <$NAME.plotlist.txt
@@ -282,13 +279,13 @@ do
 	echo "Generating summary files."
 	##cluster summary genrated
 	python $DIR/scripts/get_clusters.py $NAME $DIR
+	
 	##each cluster is blast searched against its largest sequence to help find how many samples in the cluster are 80% length of the largest sequence
 	while read p; do
-		mv $p.db_seq.txt ${p}_db_seq.fasta
-		mv $p.query_seq.txt ${p}_query_seq.fasta
-		formatdb -i ${p}_db_seq.fasta -p F -o T -t ${p}_db_seq.fasta
-		megablast  -e 1e-40 -m 8 -F F -d ${p}_db_seq.fasta -i ${p}_query_seq.fasta -o $p.80.blast
+		blastn -task megablast -dust no -outfmt 6 -evalue 1e-10 -max_target_seqs 2000  -subject $p.db_seq.txt -query $p.query_seq.txt -out $p.80.blast
+		
 	done <$NAME.listclust.txt
+	
 	##final summary file generated
 	python $DIR/scripts/give_final.py $NAME
 	
@@ -296,57 +293,42 @@ do
 	##sample specific temporary files deleted
 	while read p; do
 		rm $p.80.blast
-		rm ${p}_query_seq.fasta
-		rm ${p}_db_seq.fasta
-		rm ${p}_db_seq.fasta.nsq
-		rm ${p}_db_seq.fasta.nsi
-		rm ${p}_db_seq.fasta.nsd
-		rm ${p}_db_seq.fasta.nin
-		rm ${p}_db_seq.fasta.nhr
+		rm $p.query_seq.txt
+		rm $p.db_seq.txt
 	done <$NAME.listclust.txt
 	rm $NAME.listclust.txt
 	rm plotme.txt
-	rm ${NAME}_forblast.fasta.nhr
-	rm ${NAME}_forblast.fasta.nin
-	rm ${NAME}_forblast.fasta.nsd
-	rm ${NAME}_forblast.fasta.nsi
-	rm ${NAME}_forblast.fasta.nsq
-	rm ${NAME}_genes.fasta.nhr
-	rm ${NAME}_genes.fasta.nin
-	rm ${NAME}_genes.fasta.nsd
-	rm ${NAME}_genes.fasta.nsi
-	rm ${NAME}_genes.fasta.nsq
 	##sample specific temporary files moved to filedump directory
-	mv $NAME.fasta ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.fasta
-	mv $NAME.fasta.fai ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.fasta.fai
-	mv $NAME.blast ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.blast
-	mv $NAME.blast.length ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.blast.length
-	mv $NAME.formcl.txt ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.formcl.txt
-	mv $NAME.genes.fasta ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.genes.fasta
-	mv $NAME.Self.blast ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.Self.blast
-	mv ${NAME}_forblast.fasta ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.forblast.fasta
-	mv $NAME.link.blast ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.link.blast
-	mv $NAME.link.blast.length ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.link.blast.length
-	mv $NAME.links.txt ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.links.txt
-	mv $NAME.link.txt ./$FILE-$IDENT-Megavar_Out/links/$NAME.link.txt
-	mv $NAME.linked.txt ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.linked.txt
-	mv $NAME.plotlist.txt ./$FILE-$IDENT-Megavar_Out/filedump/$NAME.plotlist.txt
+	mv $NAME.fasta ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.fasta
+	mv $NAME.fasta.fai ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.fasta.fai
+	mv $NAME.blast ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.blast
+	mv $NAME.blast.length ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.blast.length
+	mv $NAME.formcl.txt ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.formcl.txt
+	mv $NAME.genes.fasta ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.genes.fasta
+	mv $NAME.Self.blast ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.Self.blast
+	mv $NAME.forblast.fasta ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.forblast.fasta
+	mv $NAME.link.blast ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.link.blast
+	mv $NAME.link.blast.length ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.link.blast.length
+	mv $NAME.links.txt ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.links.txt
+	mv $NAME.link.txt ./$FILE-$IDENT-Varia_n_Out/links/$NAME.link.txt
+	mv $NAME.linked.txt ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.linked.txt
+	mv $NAME.plotlist.txt ./$FILE-$IDENT-Varia_n_Out/filedump/$NAME.plotlist.txt
 	
 	##sample specific result files moved to appropriate directories
-	mv $NAME.clusters.txt ./$FILE-$IDENT-Megavar_Out/cluster_files/$NAME.clusters.txt
-	mv $NAME.Self.blast.length ./$FILE-$IDENT-Megavar_Out/length/$NAME.Self.blast.length
-	mv $NAME.chromosome.txt ./$FILE-$IDENT-Megavar_Out/chromosomes/$NAME.chromosome.txt
-	mv $NAME.domain_label.txt ./$FILE-$IDENT-Megavar_Out/labels/$NAME.domain_label.txt
-	mv $NAME.domains.txt ./$FILE-$IDENT-Megavar_Out/domains/$NAME.domains.txt
-	mv $NAME.untwin_link.txt ./$FILE-$IDENT-Megavar_Out/links/$NAME.untwin_link.txt
-	mv $NAME.axis_line.txt ./$FILE-$IDENT-Megavar_Out/axis/$NAME.axis_line.txt
-	mv $NAME.axis_label_min.txt ./$FILE-$IDENT-Megavar_Out/axis_label/$NAME.axis_label_min.txt
-	mv $NAME.axis_label_max.txt ./$FILE-$IDENT-Megavar_Out/axis_label/$NAME.axis_label_max.txt
-	mv $NAME.Plot.median.coverage.plot ./$FILE-$IDENT-Megavar_Out/coverage/$NAME.Plot.median.coverage.plot
-	mv $NAME.circos.plot.png ./$FILE-$IDENT-Megavar_Out/plots/$NAME.circos.plot.png
-	mv $NAME.circos.plot.svg ./$FILE-$IDENT-Megavar_Out/plots/$NAME.circos.plot.svg
-	mv $NAME.cluster_summary.txt ./$FILE-$IDENT-Megavar_Out/summaries/$NAME.cluster_summary.txt
-	mv $NAME.final_summary.txt ./$FILE-$IDENT-Megavar_Out/summaries/$NAME.final_summary.txt
+	mv $NAME.clusters.txt ./$FILE-$IDENT-Varia_n_Out/cluster_files/$NAME.clusters.txt
+	mv $NAME.Self.blast.length ./$FILE-$IDENT-Varia_n_Out/length/$NAME.Self.blast.length
+	mv $NAME.chromosome.txt ./$FILE-$IDENT-Varia_n_Out/chromosomes/$NAME.chromosome.txt
+	mv $NAME.domain_label.txt ./$FILE-$IDENT-Varia_n_Out/labels/$NAME.domain_label.txt
+	mv $NAME.domains.txt ./$FILE-$IDENT-Varia_n_Out/domains/$NAME.domains.txt
+	mv $NAME.untwin_link.txt ./$FILE-$IDENT-Varia_n_Out/links/$NAME.untwin_link.txt
+	mv $NAME.axis_line.txt ./$FILE-$IDENT-Varia_n_Out/axis/$NAME.axis_line.txt
+	mv $NAME.axis_label_min.txt ./$FILE-$IDENT-Varia_n_Out/axis_label/$NAME.axis_label_min.txt
+	mv $NAME.axis_label_max.txt ./$FILE-$IDENT-Varia_n_Out/axis_label/$NAME.axis_label_max.txt
+	mv $NAME.Plot.median.coverage.plot ./$FILE-$IDENT-Varia_n_Out/coverage/$NAME.Plot.median.coverage.plot
+	mv $NAME.circos.plot.png ./$FILE-$IDENT-Varia_n_Out/plots/$NAME.circos.plot.png
+	mv $NAME.circos.plot.svg ./$FILE-$IDENT-Varia_n_Out/plots/$NAME.circos.plot.svg
+	mv $NAME.cluster_summary.txt ./$FILE-$IDENT-Varia_n_Out/summaries/$NAME.cluster_summary.txt
+	mv $NAME.final_summary.txt ./$FILE-$IDENT-Varia_n_Out/summaries/$NAME.final_summary.txt
 	COUNT=$((COUNT +1))
 	echo ""
 done
@@ -354,21 +336,20 @@ done
 ##remaining temporary files removed
 rm names.txt
 rm $FILE.alt.fasta
-rm formatdb.log
 if [ "$HERECHECK" = "" ]
 then
 	rm ./$FILE.fasta
 fi
 
-##summary file moved into the Varia1_Out directory
-mv mcl_summary_$FILE.txt ./$FILE-$IDENT-Megavar_Out/summaries/mcl_summary_$FILE.txt
+##summary file moved into the Varia_n_Out directory
+mv mcl_summary_$FILE.txt ./$FILE-$IDENT-Varia_n_Out/summaries/mcl_summary_$FILE.txt
 echo ""
 echo "Done!"
 echo ""
 echo "Circos plots are located in:"
-echo "./$FILE-$IDENT-Megavar_Out/plots/$NAME.circos.plot.png"
-echo "./$FILE-$IDENT-Megavar_Out/plots/$NAME.circos.plot.svg"
+echo "./$FILE-$IDENT-Varia_n_Out/plots/$NAME.circos.plot.png"
+echo "./$FILE-$IDENT-Varia_n_Out/plots/$NAME.circos.plot.svg"
 echo ""
 echo "Summary files are located in:"
-echo "./$FILE-$IDENT-Megavar_Out/summaries/$NAME.cluster_summary.txt"
-echo "./$FILE-$IDENT-Megavar_Out/summaries/$NAME.final_summary.txt"
+echo "./$FILE-$IDENT-Varia_n_Out/summaries/$NAME.cluster_summary.txt"
+echo "./$FILE-$IDENT-Varia_n_Out/summaries/$NAME.final_summary.txt"
