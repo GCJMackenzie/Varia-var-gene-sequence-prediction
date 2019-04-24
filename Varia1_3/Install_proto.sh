@@ -1,12 +1,16 @@
 #!/bin/bash
+##stores the directory path to where script was called
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo $DIR
 
+##makes sure Varia.sh is executable
 chmod 755 $DIR/Varia.sh
 echo "Now Checking PATH for blastn:"
 echo "Now Checking PATH for blastn:" > Varia_install_log.txt
 echo ""
+
+##checks that blastn is installed and accessible via users PATH, if not it will notify the user
 BLSTN=$(which blastn)
 
 if [ "$BLSTN" = "" ]
@@ -22,6 +26,7 @@ echo ""
 echo ""
 echo ""
 
+##checks that makeblastdb is installed and accessible via users PATH, if not it will notify the user
 echo "Now Checking PATH for makeblastdb:"
 echo "Now Checking PATH for makeblastdb:" >> Varia_install_log.txt
 
@@ -40,6 +45,7 @@ echo ""
 echo ""
 echo ""
 
+##checks that samtools is installed and accessible via users PATH, if not it will notify the user
 echo "Now Checking PATH for samtools faidx:"
 echo "Now Checking PATH for samtools faidx:" >> Varia_install_log.txt
 
@@ -58,7 +64,7 @@ echo ""
 echo ""
 echo ""
 
-
+##checks that mcl is installed and accessible via users PATH, if not it will notify the user and ask if they want to try intall it using conda. If yes, conda will be used to try install mcl
 echo "Now Checking PATH for mcl:"
 echo "Now Checking PATH for mcl:" >> Varia_install_log.txt
 
@@ -89,7 +95,7 @@ echo ""
 echo ""
 echo ""
 
-
+##checks that Circos is installed and accessible via users PATH, if not it will notify the user and ask if they want to try intall it using conda. If yes, conda will be used to try install Circos
 echo "Now Checking PATH for circos:"
 echo "Now Checking PATH for circos:" >> Varia_install_log.txt
 
@@ -120,12 +126,16 @@ echo ""
 echo ""
 echo ""
 
+##database setup
 echo "Now checking database"
 echo "Now checking database" >> Varia_install_log.txt
 CANCEL=false
 HERE=$(pwd)
 cd $HERE/vardb
+##checks database directory for vardb.fasta
 VDB=$(find vardb.fasta 2> /dev/null)
+##if its not present it asks the user if they want to designate a file to be vardb
+##if yes, it will ask user to enter full pathway to file to be used as vardb, will loop until a valid file path is entered or the user quits.
 if [ "$VDB" = "" ]
 then
 	echo "vardb.fasta was not found in $HERE/vardb."
@@ -149,6 +159,7 @@ then
 		if [ "$VCHCK" = "" ] && [ $CANCEL = false ]
 		then
 			echo "Cannot find or access $INP, please re-enter the file you wish to use."
+##creates soft link to file under the name vardb.fasta to avoid duplicate files or needing to edit originals name
 		elif [ $CANCEL = false ]
 		then
 			echo "Creating soft link to $INP, this will be called $HERE/vardb/vardb.fasta"
@@ -169,6 +180,7 @@ else
 fi
 if [ $CANCEL = false ]
 then
+##uses soft linked file to generate fasta index and the necessary blast database files
 	echo "Configuring database:"
 	samtools faidx vardb.fasta
 	makeblastdb -in vardb.fasta -parse_seqids -dbtype nucl -out vardb 
@@ -180,9 +192,13 @@ echo ""
 echo ""
 echo "Now checking domains file"
 echo "Now checking domains file" >> Varia_install_log.txt
+##domain file setup
 CANCEL=false
 cd $HERE/domains
+##checks domains directory for a domains file
 VDM=$(find vardb_domains.txt 2> /dev/null)
+##if one is not fount it asks user if they want to designate one and for the name of the file to be used
+##if yes it will loop until a valid domain file path is entered or the user quits.
 if [ "$VDM" = "" ]
 then
 	echo "vardb_domains.txt was not found in $HERE/domains."
@@ -209,6 +225,7 @@ then
 			echo "Cannot find or access $INP, please re-enter the file you wish to use."
 		elif [ $CANCEL = false ]
 		then
+##makes soft link to the domains file in domains directory
 			echo "Creating soft link to $INP, this will be called $HERE/domains/vardb_domains.txt"
 			echo "Creating soft link to $INP, this will be called $HERE/domains/vardb_domains.txt" >> $HERE/Varia_install_log.txt
 			ln -s $INP vardb_domains.txt
@@ -233,6 +250,8 @@ echo "Setting up megavar:" > Varia_install_log.txt
 echo "Now Checking PATH for megablast:"
 echo "Now Checking PATH for megablast:" > Varia_install_log.txt
 echo ""
+
+##checks that megablast is installed and accessible via users PATH, if not it will notify the user 
 MGBLST=$(which megablast)
 
 if [ "$MGBLST" = "" ]
@@ -250,6 +269,7 @@ echo ""
 echo "Now Checking PATH for formatdb:"
 echo "Now Checking PATH for formatdb:" >> Varia_install_log.txt
 
+##checks that formatdb is installed and accessible via users PATH, if not it will notify the user
 MGDB=$(which formatdb)
 if [ "$MGDB" = "" ]
 then
@@ -265,11 +285,15 @@ cd $HERE
 echo ""
 echo ""
 echo ""
-echo "Now checking database"
-echo "Now checking database" >> Varia_install_log.txt
+
+##checks that a file is present to be used as megavardb.fasta is present in megadb
+echo "Now checking megablast database"
+echo "Now checking megablast database" >> Varia_install_log.txt
 CANCEL=false
 cd $HERE/vardb/megadb
 MDB=$(find megavardb.fasta 2> /dev/null)
+##if its not present it asks the user if they want to designate a file to be megavardb
+##if yes, it will ask user to enter full pathway to file to be used as megavardb, will loop until a valid file path is entered or the user quits.
 if [ "$MDB" = "" ]
 then
 	echo "megavardb.fasta was not found in $HERE/vardb/megadb."
@@ -318,6 +342,7 @@ else
 fi
 if [ $CANCEL = false ]
 then
+##creates fasta index and database files for new megavardb
 	echo "Configuring database:"
 	samtools faidx megavardb.fasta
 	formatdb -i megavardb.fasta -p F -o T -t megavardb.fasta 

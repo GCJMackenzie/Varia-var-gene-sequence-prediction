@@ -63,7 +63,7 @@ filename = "./"+name+".axis_label_min.txt"
 file = open(filename, 'w')
 n = 0
 while(n < len(store)):
-    writeline = store[n][0] + '\t0\t100\t0\tr0=1.04r,r1=1.05r\n'
+    writeline = store[n][0] + '\t0\t100\t0\tr0=1.145r,r1=1.155r\n'
     file.write(writeline)
 
     n = n + 1
@@ -74,7 +74,7 @@ filename = "./"+name+".axis_label_max.txt"
 file = open(filename, 'w')
 n = 0
 while(n < len(store)):
-    writeline = store[n][0] + '\t0\t100\t' + str(max) + '\tr0=1.14r,r1=1.16r\n'
+    writeline = store[n][0] + '\t0\t100\t' + str(max) + '\tr0=1.225r,r1=1.245r\n'
     file.write(writeline)
     n = n + 1
 file.close()

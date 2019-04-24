@@ -1,5 +1,5 @@
 import sys
-'takes in name used in Varia script for current smaple'
+'takes in name used in Varia script for current sample'
 name = sys.argv[1]
 n = 0
 store = []
