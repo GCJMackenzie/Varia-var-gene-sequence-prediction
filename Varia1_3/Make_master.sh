@@ -1,12 +1,12 @@
 #!/bin/bash
-'script for creating master test tables used during testing of Varia'
-'takes the FULL PATH to the directory of results from Varia for a sample. and the IDfilter'
+##script for creating master test tables used during testing of Varia
+##takes the FULL PATH to the directory of results from Varia for a sample. and the IDfilter
 SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 RETURN=$(pwd)
 DIR=$1
 IDFILT=$2
 cd $DIR
-'retrieves file containing the sample names present in results'
+##retrieves file containing the sample names present in results
 cp ./filedump/names.txt names.txt
 while read p;
 	do x=$(echo $p | cut -d '>' -f 2)
@@ -18,12 +18,12 @@ done < names.txt
 rm names.txt
 cd filedump
 
-'counts blast hits of each sample and adds to master table'
+##counts blast hits of each sample and adds to master table
 while read p;
 	do wc -l ${p}.blast | awk '{print $2 "\t" $1}' >> Master_onecol.txt
 done < $DIR/name.txt
 
-'filters blast hits for each sample for identity and bp length then adds to column 2 of table'
+##filters blast hits for each sample for identity and bp length then adds to column 2 of table
 while read p;
 	do
 	awk -v filter=$IDFILT '$3>filter && $4>200' $p.blast |wc -l | awk -v ident="$p" '{print ident "\t" $1}' >> dbfilt.txt
@@ -33,7 +33,7 @@ python $SCRIPT/scripts/append_column.py Master_onecol.txt dbfilt.txt Master_twoc
 rm dbfilt.txt
 rm Master_onecol.txt
 
-'adds no. of self blast hits for samples to column 3'
+##adds no. of self blast hits for samples to column 3
 while read p;
 	do
 	FILECHECK=$(ls -F | grep ${p}.Self.blast)
@@ -49,7 +49,7 @@ python $SCRIPT/scripts/append_column.py Master_twocol.txt Selfunfilt.txt Master_
 rm Master_twocol.txt
 rm Selfunfilt.txt
 
-'adds number of filtered hits for each sample to column 4'
+##adds number of filtered hits for each sample to column 4
 while read p;
 	do
 	FILECHECK=$(ls -F | grep ${p}.formcl.txt)
@@ -68,7 +68,7 @@ rm Selffilt.txt
 mv Master_fourcol.txt $DIR/cluster_files/Master_fourcol.txt
 cd $DIR/cluster_files
 
-'counts the number of clusters each sample generated and adds to column five'
+##counts the number of clusters each sample generated and adds to column five
 while read p;
 	do 
 	FILECHECK=$(ls -F | grep ${p}.clusters.txt)
@@ -87,7 +87,7 @@ rm clustnum.txt
 mv Master_fivecol.txt $DIR/filedump/Master_fivecol.txt
 cd $DIR/filedump
 
-'adds the number of links between clusters were found for each sample to column six'
+##adds the number of links between clusters were found for each sample to column six
 while read p;
 	do
 	FILECHECK=$(ls -F | grep ${p}.link.blast)
@@ -106,7 +106,7 @@ rm link_unfilt.txt
 mv Master_sixcol.txt $DIR/links/Master_sixcol.txt
 cd $DIR/links
 
-'adds the number of filtered links from each sample to column 7'
+##adds the number of filtered links from each sample to column 7
 while read p;
 	do
 	FILECHECK=$(ls -F | grep ${p}.untwin_link.txt)
@@ -125,7 +125,7 @@ rm link_filt.txt
 mv Master_sevcol.txt $DIR/cluster_files/Master_sevcol.txt
 cd $DIR/cluster_files
 
-'checks if sample name is present in any clusters (will always be no unless it was in the db) and adds it to column 8'
+##checks if sample name is present in any clusters (will always be no unless it was in the db) and adds it to column 8
 while read p;
 	do 
 	FILECHECK=$(ls -F | grep $p.clusters.txt)
@@ -145,7 +145,7 @@ python $SCRIPT/scripts/append_column.py Master_sevcol.txt match1.txt Master_octc
 rm Master_sevcol.txt
 rm match1.txt
 
-'checks if sample name is present in cluster 1 (will always be no unless it was in the db) and adds it to column 9'
+##checks if sample name is present in cluster 1 (will always be no unless it was in the db) and adds it to column 9
 while read p;
 	do 
 	FILECHECK=$(ls -F | grep $p.clusters.txt)
@@ -165,7 +165,7 @@ python $SCRIPT/scripts/append_column.py Master_octcol.txt match2.txt Master_nonc
 rm Master_octcol.txt
 rm match2.txt
 
-'adds the length of cluster 1 to column 10'
+##adds the length of cluster 1 to column 10
 TAB=$(echo -e '\t')
 while read p;
 	do
@@ -187,7 +187,7 @@ rm clustsize.txt
 mv Master_deccol.txt $DIR/summaries/Master_deccol.txt
 cd $DIR/summaries
 
-'adds the name of the largest sequence in cluster 1 to column 11'
+##adds the name of the largest sequence in cluster 1 to column 11
 while read p;
 	do 
 	FILECHECK=$(ls -F | grep $p.final_summary.txt)
@@ -204,7 +204,7 @@ python $SCRIPT/scripts/append_column.py Master_deccol.txt largest.txt Master_elf
 rm Master_deccol.txt
 rm largest.txt
 
-'adds the number of seqs in cluster 1 that are 80% matches to the largest seq to column 12'
+##adds the number of seqs in cluster 1 that are 80% matches to the largest seq to column 12
 while read p;
 	do 
 	FILECHECK=$(ls -F | grep $p.final_summary.txt)
@@ -221,13 +221,13 @@ python $SCRIPT/scripts/append_column.py Master_elfcol.txt percent.txt Master_zwo
 rm Master_elfcol.txt
 rm percent.txt
 
-'finds subdomains of the sample seq in domains file for each sample'
+##finds subdomains of the sample seq in domains file for each sample
 while read p;
 	do
 	grep "$p" $SCRIPT/domains/vardb_domains.txt | cut -d "$TAB" -f 4 >> $p_grep.txt
 	GSIZE=$(wc -l $p_grep.txt)
 	BUILD=""
-	'compares it to the subdomains of the largest seq in cluster 1' 
+	##compares it to the subdomains of the largest seq in cluster 1
 	while read q;
 		do
 		BUILD="$BUILD $q"
@@ -245,7 +245,7 @@ while read p;
 		ABSCHECK=false
 	fi
 	if [ $ABSCHECK = true ]
-	'if they match yes is written in column 13, no if they do not'
+	##if they match yes is written in column 13, no if they do not
 	then
 		if [ "$BUILD" = "$IN" ]
 			then 
@@ -256,7 +256,7 @@ while read p;
 	else
 		echo -e "$p\tAbs" >> True_match.txt
 	fi
-'NTS and ATS domains are removed from both subdomain structures and compared again'
+##NTS and ATS domains are removed from both subdomain structures and compared again
 	START=$(echo $BUILD | grep -Eo 'NTS' | wc -l)
 	FCUT=$((1 + $START))
 	SDCOUNT=$(echo $BUILD | wc -w)
@@ -272,7 +272,7 @@ while read p;
 	EIN=$(echo $IN | cut -d ' ' -f $FCUT-$BCUT)
 	if [ $ABSCHECK = true ]
 	then
-'whether they match or not is stored in column 14'
+##whether they match or not is stored in column 14
 		if [ "$EBUILD" = "$EIN" ]
 		then
 		echo -e "$p\tYes" >> Filt_match.txt
@@ -293,17 +293,17 @@ python $SCRIPT/scripts/append_column.py Master_dreizcol.txt Filt_match.txt Maste
 rm Master_dreizcol.txt
 rm Filt_match.txt
 
-'predicted subdomain structure added to column 15'
+##predicted subdomain structure added to column 15
 python $SCRIPT/scripts/append_column.py Master_vierz.txt predict.txt Master_funf.txt
 rm Master_vierz.txt
 rm predict.txt
 
-'actual subdomain structure added to column 16'
+##actual subdomain structure added to column 16
 python $SCRIPT/scripts/append_column.py Master_funf.txt actual.txt Master_table.txt
 rm Master_funf.txt
 rm actual.txt
 
-'column headers added to copy of master table'
+##column headers added to copy of master table
 echo -e "ID\tDB_unfiltered_hits\tDB_filtered_hits\tSelf_unfiltered_hits\tSelf_filtered_hits\tNum_of_clusters\tNum_of_unfiltered_links\tNum_of_links\tSample_match\tClust1_match\tClust1_Size\tClust1_largest\t80%_matches\tDomain_match\tNo_terminal_match\tPredicted_subdomains\tActual_subdomains" > $DIR/Master_table_header.txt
 cat Master_table.txt >> $DIR/Master_table_header.txt
 mv Master_table.txt $DIR/Master_table.txt

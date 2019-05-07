@@ -328,7 +328,7 @@ do
 			formatdb -i ${p}_db_seq.fasta -p F -o T -t ${p}_db_seq.fasta
 			megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -A 100 -F F -d ${p}_db_seq.fasta -i ${p}_query_seq.fasta -o $p.80.blast
 		##coverage file generated for the regions of similarity between genes in a single cluster.
-			cut -f 1,2,7,8 $p.80.blast > $p.cover.txt
+			cut -f 1,2,7,8 $p.80.blast | sort -k 4 -n -r  > $p.cover.txt
 			python $DIR/scripts/cluster_coverage.py $p
 			rm $p.cover.txt
 			python $DIR/scripts/give_median.py $p.plotcov.txt
