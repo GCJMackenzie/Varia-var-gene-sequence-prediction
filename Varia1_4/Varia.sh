@@ -1,13 +1,13 @@
 #!/bin/bash
 
-## 1. Add the path to Varia3 directory to your pathway
-## 2. Run Install_proto.sh from the Varia3 directory to setup databases and check necessary tools are installed.
+## 1. Add the path to Varia1_4 directory to your pathway
+## 2. Run Install_proto.sh from the Varia1_4 directory to setup databases and check necessary tools are installed.
 ## 3. Run this script with command line: Varia.sh <name of fasta file> <identity value for initial blast>
 
-##obtains current path to Varia directory
+##obtains current path to Varia1_4 directory
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-##checks that the name of fasta file is both present abd valid.
+##checks that the name of fasta file is both present and valid.
 if [ "$1" = "" ]
 then
 	echo "No filename specified, input should be: Varia.sh [input_file.fasta] [identity score]"
@@ -182,7 +182,7 @@ do
 	
 	##sample is blast searched against the database, then the length of the sequence is added
 
-	megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d $DIR/vardb/megadb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
+	megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d $DIR/vardb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
 	
 	##if no hits to db were found the program notifies user and moves to next sample.
 	HITCHECK=true
@@ -196,13 +196,13 @@ do
 	if [ $HITCHECK = true ]
 	then
 		PROGRESS=1
-		perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/megadb/megavardb.fasta $NAME.blast
+		perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl $NAME.fasta $DIR/vardb/megavardb.fasta $NAME.blast
 		##fasta index made for temp fasta file
 		samtools faidx $NAME.fasta
 	
 		##genes of interest added to genes.fasta file
 		n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
-		samtools faidx $DIR/vardb/megadb/megavardb.fasta $n >> ${NAME}_genes.fasta
+		samtools faidx $DIR/vardb/megavardb.fasta $n >> ${NAME}_genes.fasta
 			
 		##checks that there are hits remaining after the filter is applied.
 		##if not then moves on to the next sample.
@@ -349,10 +349,21 @@ do
 		done <$NAME.axis_label_max.txt
 		##final summary file generated
 		python $DIR/scripts/give_final.py $NAME
+		echo ">${NAME}_tag" > tag.fasta
+		sed -n 2p $NAME.fasta >> tag.fasta
+		TAGLEN=$(sed -n 2p tag.fasta | wc -c)
+		TAGLEN=$(($TAGLEN - 1))
+		megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i tag.fasta -o ${NAME}_taglink.blast
+		cat $NAME.untwin_link.txt >> $NAME.plustag_link.txt
 		
+		cut -f 1,2,7,8,9,10 ${NAME}_taglink.blast >> linktemp.txt
+		awk '{print $1 "\t" $3 "\t" $4 "\t" $2 "\t" $5 "\t" $6 "\tcolor=yellow_a3"}' linktemp.txt >> $NAME.plustag_link.txt
+		rm tag.fasta
+		rm linktemp.txt
+		echo -e "chr\t-\t${NAME}_tag\t${NAME}_tag\t0\t$TAGLEN\tlyellow" >> $NAME.chromosome.txt
 		echo "Generating Circos plot."
 		##Circos plot generated
-		circos -silent -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.untwin_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param intracov_file=$NAME.intraclustcoverage.plot -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line2.txt -param axis_file2=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_min2=$NAME.axis_label_min2.txt -param axis_max=$NAME.axis_label_max.txt -param axis_max2=$NAME.axis_label_max2.txt -param max=$MAX -param range=$RANGE -param intramax=$INTRAMAX -param intrarange=$INTRARANGE -outputfile $NAME.circos.plot.png
+		circos -silent -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.plustag_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param intracov_file=$NAME.intraclustcoverage.plot -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line2.txt -param axis_file2=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_min2=$NAME.axis_label_min2.txt -param axis_max=$NAME.axis_label_max.txt -param axis_max2=$NAME.axis_label_max2.txt -param max=$MAX -param range=$RANGE -param intramax=$INTRAMAX -param intrarange=$INTRARANGE -outputfile $NAME.circos.plot.png
 	
 		echo "Removing temporary files and organising files."
 		##sample specific temporary files deleted
@@ -387,6 +398,8 @@ do
 		mv $NAME.domain_label.txt ./$FILE-$IDENT-Varia_Out/labels/$NAME.domain_label.txt
 		mv $NAME.domains.txt ./$FILE-$IDENT-Varia_Out/domains/$NAME.domains.txt
 		mv $NAME.untwin_link.txt ./$FILE-$IDENT-Varia_Out/links/$NAME.untwin_link.txt
+		mv $NAME.plustag_link.txt ./$FILE-$IDENT-Varia_Out/links/$NAME.plustag_link.txt
+		mv ${NAME}_taglink.blast ./$FILE-$IDENT-Varia_Out/filedump/${NAME}_taglink.blast
 		mv $NAME.axis_line.txt ./$FILE-$IDENT-Varia_Out/axis/$NAME.axis_line.txt
 		mv $NAME.axis_line2.txt ./$FILE-$IDENT-Varia_Out/axis/$NAME.axis_line2.txt
 		mv $NAME.axis_label_min.txt ./$FILE-$IDENT-Varia_Out/axis_label/$NAME.axis_label_min.txt
@@ -406,7 +419,6 @@ do
 		then
 		mv $NAME.fasta.fai ./$FILE-$IDENT-Varia_Out/filedump/$NAME.fasta.fai
 		mv $NAME.blast.length ./$FILE-$IDENT-Varia_Out/filedump/$NAME.blast.length
-		mv $NAME.genes.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.genes.fasta
 		fi
 	if [ $PROGRESS -gt 1 ]
 		then
@@ -418,7 +430,21 @@ do
 		mv $NAME.formcl.txt ./$FILE-$IDENT-Varia_Out/filedump/$NAME.formcl.txt
 		mv $NAME.Self.blast ./$FILE-$IDENT-Varia_Out/filedump/$NAME.Self.blast
 		mv $NAME.Self.blast.length ./$FILE-$IDENT-Varia_Out/length/$NAME.Self.blast.length
-		fi	
+		fi
+	GENECHECK=$(ls -F | grep "${NAME}_genes.fasta")
+			if [ "$GENECHECK" != "" ]
+			then
+				rm ${NAME}_genes.fasta
+			fi
+
+	GENECHECK=$(ls -F | grep "$NAME.genes.fasta")
+			if [ "$GENECHECK" != "" ]
+			then
+				mv $NAME.genes.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.genes.fasta
+
+			fi
+
+			
 	COUNT=$((COUNT +1))
 	echo ""
 done
