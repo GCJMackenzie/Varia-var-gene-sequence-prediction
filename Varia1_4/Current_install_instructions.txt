@@ -1,7 +1,7 @@
 1. Download Varia
 2. unzip in directory you want to install Varia in
-3. enter Varia1_3 directory
-4. run Install_proto.sh, this will:
+3. enter Varia1_4 directory
+4. run Install_Varia.sh, this will:
 	check if Varia can find samtools either stating the path to the version it will use or telling the user to install samtools
 	check if Varia can find mcl, if it cant it will ask if the user wants to automatically install it with conda. If it can find mcl, then it will print the path to the version it will use
 	check if Varia can find circos, if it cant it will ask if the user wants to automatically install it with conda. If it can find circos, then it will print the path to the version it will use

@@ -151,8 +151,6 @@ fi
 echo ""
 echo ""
 echo ""
-echo "Setting up megavar:"
-echo "Setting up megavar:" > Varia_install_log.txt
 echo "Now Checking PATH for megablast:"
 echo "Now Checking PATH for megablast:" > Varia_install_log.txt
 echo ""
@@ -162,10 +160,10 @@ MGBLST=$(which megablast)
 
 if [ "$MGBLST" = "" ]
 then
-	echo "megablast is required by Megavar to run. But no instance of megablast can be found on your PATH, please install and add megablast to your PATH."
-	echo "megablast is required by Megavar to run. But no instance of megablast can be found on your PATH, please install and add megablast to your PATH." >> Varia_install_log.txt
+	echo "megablast is required by Varia to run. But no instance of megablast can be found on your PATH, please install and add megablast to your PATH."
+	echo "megablast is required by Varia to run. But no instance of megablast can be found on your PATH, please install and add megablast to your PATH." >> Varia_install_log.txt
 else
-	MGBLST="megablast is required by Megavar to run. Megavar will use the megablast instance found in $MGBLST"
+	MGBLST="megablast is required by Varia to run. Varia will use the megablast instance found in $MGBLST"
 	echo $MGBLST
 	echo $MGBLST >> Varia_install_log.txt
 fi
@@ -179,11 +177,11 @@ echo "Now Checking PATH for formatdb:" >> Varia_install_log.txt
 MGDB=$(which formatdb)
 if [ "$MGDB" = "" ]
 then
-	echo "formatdb is required by Megavar to run. But no instance of formatdb can be found on your PATH, please install and add formatdb to your PATH."
-	echo "formatdb is required by Megavar to run. But no instance of formatdb can be found on your PATH, please install and add formatdb to your PATH." >> Varia_install_log.txt
+	echo "formatdb is required by Varia to run. But no instance of formatdb can be found on your PATH, please install and add formatdb to your PATH."
+	echo "formatdb is required by Varia to run. But no instance of formatdb can be found on your PATH, please install and add formatdb to your PATH." >> Varia_install_log.txt
 
 else
-	MGDB="formatdb is required by Megavar to run. Megavar will use the formatdb instance found in $MGDB"
+	MGDB="formatdb is required by Varia to run. Varia will use the formatdb instance found in $MGDB"
 	echo $MGDB
 	echo $MGDB >> Varia_install_log.txt
 fi
