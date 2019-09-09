@@ -45,13 +45,13 @@ then
 fi
 
 
-if ! echo $IDENT | egrep -q '^[0-9]+$';
+if ! echo $IDENT | egrep -q '^[0-9]+\.?[0-9]*$';
 then
-	echo "Identity score must be an integer between 1 and 100, input should be: Varia.sh [input_file.fasta] [identity score]"
+	echo "Identity score must be an integer between 0 and 100, input should be: Varia.sh [input_file.fasta] [identity score]"
 	exit
 fi
 
-if [ $IDENT -gt 100 ] || [ $IDENT -lt 1 ]
+if (( $(echo "$IDENT > 100" | bc -l) )) || (( $(echo "$IDENT < 0" | bc -l) ))
 then
 	echo "Identity score out of range, keep identity score between 1 and 100"
 	exit
@@ -76,6 +76,8 @@ then
 	mkdir ./$FILE-$IDENT-Varia_Out/axis
 	mkdir ./$FILE-$IDENT-Varia_Out/axis_label
 	mkdir ./$FILE-$IDENT-Varia_Out/summaries
+	mkdir ./$FILE-$IDENT-Varia_Out/Domain_Dist_plots
+	mkdir ./$FILE-$IDENT-Varia_Out/Domain_Dist_configs
 else
 	echo "An oputput directory named $FILE-$IDENT-Varia_Out is already present"
 	read -n1 -p "Do you wish for Varia to overwrite the contents of $FILE-$IDENT-Varia_Out? [y,n]" doit
@@ -144,6 +146,16 @@ else
 			then
 				mkdir summaries
 			fi
+			DIRCHECK=$(ls -F | grep Domain_Dist_plots)
+			if [ "$DIRCHECK" = "" ]
+			then
+				mkdir Domain_Dist_plots
+			fi
+			DIRCHECK=$(ls -F | grep Domain_Dist_configs)
+			if [ "$DIRCHECK" = "" ]
+			then
+				mkdir Domain_Dist_configs
+			fi
 			cd .. ;;
 			n|N)
 			echo ""
@@ -201,7 +213,7 @@ do
 		samtools faidx $NAME.fasta
 	
 		##genes of interest added to genes.fasta file
-		n=$(awk -v identity="$IDENT" '$3>identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
+		n=$(awk -v identity="$IDENT" '$3>=identity && $4>200' $NAME.blast.length | cut -f 2 | awk ' {n=n" "$FILE } END {print n}')
 		samtools faidx $DIR/vardb/megavardb.fasta $n >> ${NAME}_genes.fasta
 			
 		##checks that there are hits remaining after the filter is applied.
@@ -364,7 +376,17 @@ do
 		echo "Generating Circos plot."
 		##Circos plot generated
 		circos -silent -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.plustag_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param intracov_file=$NAME.intraclustcoverage.plot -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line2.txt -param axis_file2=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_min2=$NAME.axis_label_min2.txt -param axis_max=$NAME.axis_label_max.txt -param axis_max2=$NAME.axis_label_max2.txt -param max=$MAX -param range=$RANGE -param intramax=$INTRAMAX -param intrarange=$INTRARANGE -outputfile $NAME.circos.plot.png
-	
+
+
+		##Domain distribution plot scripts generated
+		python $DIR/scripts/Plot_dist_bar.py $NAME.cluster_summary.txt	
+		python $DIR/scripts/Plot_dist_bar.py $NAME.final_summary.txt
+
+		##Domain distribution plots generated using scripts
+		python Make_plot_${NAME}.cluster_summary_counts.py
+		python Make_plot_${NAME}.cluster_summary_percent.py
+		python Make_plot_${NAME}.final_summary_counts.py
+		python Make_plot_${NAME}.final_summary_percent.py
 		echo "Removing temporary files and organising files."
 		##sample specific temporary files deleted
 		while read p; do
@@ -391,7 +413,7 @@ do
 		mv $NAME.link.txt ./$FILE-$IDENT-Varia_Out/links/$NAME.link.txt
 		mv $NAME.linked.txt ./$FILE-$IDENT-Varia_Out/filedump/$NAME.linked.txt
 		mv $NAME.plotlist.txt ./$FILE-$IDENT-Varia_Out/filedump/$NAME.plotlist.txt
-	
+		
 		##sample specific result files moved to appropriate directories
 		mv $NAME.clusters.txt ./$FILE-$IDENT-Varia_Out/cluster_files/$NAME.clusters.txt
 		mv $NAME.chromosome.txt ./$FILE-$IDENT-Varia_Out/chromosomes/$NAME.chromosome.txt
@@ -412,6 +434,14 @@ do
 		mv $NAME.circos.plot.svg ./$FILE-$IDENT-Varia_Out/plots/$NAME.circos.plot.svg
 		mv $NAME.cluster_summary.txt ./$FILE-$IDENT-Varia_Out/summaries/$NAME.cluster_summary.txt
 		mv $NAME.final_summary.txt ./$FILE-$IDENT-Varia_Out/summaries/$NAME.final_summary.txt
+		mv Make_plot_${NAME}.cluster_summary_counts.py ./$FILE-$IDENT-Varia_Out/Domain_Dist_configs/Make_plot_${NAME}.cluster_summary_counts.py
+		mv Make_plot_${NAME}.cluster_summary_percent.py ./$FILE-$IDENT-Varia_Out/Domain_Dist_configs/Make_plot_${NAME}.cluster_summary_percent.py
+		mv Make_plot_${NAME}.final_summary_counts.py ./$FILE-$IDENT-Varia_Out/Domain_Dist_configs/Make_plot_${NAME}.final_summary_counts.py
+		mv Make_plot_${NAME}.final_summary_percent.py ./$FILE-$IDENT-Varia_Out/Domain_Dist_configs/Make_plot_${NAME}.final_summary_percent.py
+		mv $NAME.cluster_summary_counts.png ./$FILE-$IDENT-Varia_Out/Domain_Dist_plots/$NAME.cluster_summary_counts.png
+		mv $NAME.cluster_summary_percent.png ./$FILE-$IDENT-Varia_Out/Domain_Dist_plots/$NAME.cluster_summary_percent.png
+		mv $NAME.final_summary_counts.png ./$FILE-$IDENT-Varia_Out/Domain_Dist_plots/$NAME.final_summary_counts.png
+		mv $NAME.final_summary_percent.png ./$FILE-$IDENT-Varia_Out/Domain_Dist_plots/$NAME.final_summary_percent.png
 	fi
 	mv $NAME.fasta ./$FILE-$IDENT-Varia_Out/filedump/$NAME.fasta
 	mv $NAME.blast ./$FILE-$IDENT-Varia_Out/filedump/$NAME.blast
