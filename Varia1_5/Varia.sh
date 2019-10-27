@@ -149,7 +149,7 @@ while [ -n "$1" ]; do # while loop starts
 		FILEPATH=$(echo $INFILE | rev | cut -d '/' -f 2- | rev)
 		if [ "$FILENAME" = "$FILEPATH" ]
 		then
-			FILEPATH=""
+			FILEPATH="."
 		fi
 		##Stores file name without .fasta.
 		FILE=$(basename $FILENAME .fasta)
@@ -174,7 +174,7 @@ while [ -n "$1" ]; do # while loop starts
 			exit
 		fi
 		
-		##Checks -i is not blank.
+		##Checks -o is not blank.
 		if [ "$OUTDIR" = "" ]
 		then
 			echo "No directory name specified."
