@@ -23,6 +23,9 @@ PERCENT=80
 ##Check value for whether to keep filedump contents. Default false.
 DUMPCHECK=false
 
+##Check value for whether to generate plots. Config files generated regardless Default true
+GRAPHCHECK=true
+
 ##Name of output directory. Default [Input file basename]-[IDENTA]-Varia_Out, (value set later in program).
 OUTDIR=""
 
@@ -189,6 +192,11 @@ while [ -n "$1" ]; do # while loop starts
 		DUMPCHECK=true
 		;;
 
+	##If -g is specified, the check value for generating plots is set to false.
+	-g)
+		GRAPHCHECK=false
+		;;
+
 	##If -h is specified, the contents of the help file is printed to console.
 	-h)
 		echo ""
@@ -309,7 +317,7 @@ do
 	
 	##sample is blast searched against the database, then the length of the sequence is added
 
-	megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d $DIR/vardb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
+	megablast -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d $DIR/vardb/megavardb.fasta -i $NAME.fasta -o $NAME.blast
 	
 	##if no hits to db were found the program notifies user and moves to next sample.
 	HITCHECK=true
@@ -348,7 +356,7 @@ do
 
 		##genes file blast searched against itself and lengths added
 		formatdb -i ${NAME}_genes.fasta -p F -o T -t ${NAME}_db.fasta
-		megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_genes.fasta -i ${NAME}_genes.fasta -o $NAME.Self.blast
+		megablast -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_genes.fasta -i ${NAME}_genes.fasta -o $NAME.Self.blast
 		perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_genes.fasta ${NAME}_genes.fasta $NAME.Self.blast
 		##genes to be passed to mcl added to txt file
 		DECPERCENT=$(bc <<<"scale=4; $PERCENT / 100")
@@ -368,7 +376,7 @@ do
 		echo "Clustering with mcl."	
 		## mcl forms cluster groups of the genes
 		mcl $NAME.formcl.txt -q x -V all --abc -o $NAME.clusters.txt
-		echo "Generating files for Circos plot."	
+		echo "Generating files for plot configuration."	
 		##finds total number of lines in cluster file
 		CTOT=$(wc -l $NAME.clusters.txt| head -n1| awk '{print $1;}')
 	
@@ -403,7 +411,7 @@ do
 		mv $NAME.forblast.fasta ${NAME}_forblast.fasta
 		formatdb -i ${NAME}_forblast.fasta -p F -o T -t ${NAME}_forblast.fasta
 		##blast run to perform self comparison of fasta file generated from pythonsort
-		megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i ${NAME}_forblast.fasta -o $NAME.link.blast
+		megablast -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i ${NAME}_forblast.fasta -o $NAME.link.blast
 		perl $DIR/scripts/helper.putlengthfasta2Blastm8.pl ${NAME}_forblast.fasta ${NAME}_forblast.fasta $NAME.link.blast
 
 		##runs the labelfile python script to create file containing domain names for sample
@@ -451,7 +459,7 @@ do
 			mv $p.db_seq.txt ${p}_db_seq.fasta
 			mv $p.query_seq.txt ${p}_query_seq.fasta
 			formatdb -i ${p}_db_seq.fasta -p F -o T -t ${p}_db_seq.fasta
-			megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -A 100 -F F -d ${p}_db_seq.fasta -i ${p}_query_seq.fasta -o $p.80.blast
+			megablast -b 2000 -v 2000 -e 1e-10 -m 8 -A 100 -F F -d ${p}_db_seq.fasta -i ${p}_query_seq.fasta -o $p.80.blast
 		##coverage file generated for the regions of similarity between genes in a single cluster.
 			cut -f 1,2,7,8 $p.80.blast | sort -k 4 -n -r  > $p.cover.txt
 			python $DIR/scripts/cluster_coverage.py $p
@@ -478,7 +486,7 @@ do
 		sed -n 2p $NAME.fasta >> tag.fasta
 		TAGLEN=$(sed -n 2p tag.fasta | wc -c)
 		TAGLEN=$(($TAGLEN - 1))
-		megablast  -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i tag.fasta -o ${NAME}_taglink.blast
+		megablast -b 2000 -v 2000 -e 1e-10 -m 8 -F F -d ${NAME}_forblast.fasta -i tag.fasta -o ${NAME}_taglink.blast
 		cat $NAME.untwin_link.txt >> $NAME.plustag_link.txt
 		
 		cut -f 1,2,7,8,9,10 ${NAME}_taglink.blast >> linktemp.txt
@@ -486,20 +494,25 @@ do
 		rm tag.fasta
 		rm linktemp.txt
 		echo -e "chr\t-\t${NAME}_tag\t${NAME}_tag\t0\t$TAGLEN\tlyellow" >> $NAME.chromosome.txt
-		echo "Generating Circos plot."
 		##Circos plot generated
-		circos -silent -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.plustag_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param intracov_file=$NAME.intraclustcoverage.plot -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line2.txt -param axis_file2=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_min2=$NAME.axis_label_min2.txt -param axis_max=$NAME.axis_label_max.txt -param axis_max2=$NAME.axis_label_max2.txt -param max=$MAX -param range=$RANGE -param intramax=$INTRAMAX -param intrarange=$INTRARANGE -outputfile $NAME.circos.plot.png
-
+		if [ $GRAPHCHECK = true ]
+			then
+			echo "Generating plots."
+			circos -silent -nosvg -conf $DIR/scripts/Varia.conf -param chromosome_file=$NAME.chromosome.txt -param link_file=$NAME.plustag_link.txt -param domain_file=$NAME.domains.txt -param domain_label_file=$NAME.domain_label.txt -param intracov_file=$NAME.intraclustcoverage.plot -param coverage_file=$NAME.Plot.median.coverage.plot -param axis_file=$NAME.axis_line2.txt -param axis_file2=$NAME.axis_line.txt -param axis_min=$NAME.axis_label_min.txt -param axis_min2=$NAME.axis_label_min2.txt -param axis_max=$NAME.axis_label_max.txt -param axis_max2=$NAME.axis_label_max2.txt -param max=$MAX -param range=$RANGE -param intramax=$INTRAMAX -param intrarange=$INTRARANGE -outputfile $NAME.circos.plot.png
+			fi
 
 		##Domain distribution plot scripts generated
 		python $DIR/scripts/Plot_dist_bar.py $NAME.cluster_summary.txt	
 		python $DIR/scripts/Plot_dist_bar.py $NAME.final_summary.txt
 
 		##Domain distribution plots generated using scripts
-		python Make_plot_${NAME}.cluster_summary_counts.py
-		python Make_plot_${NAME}.cluster_summary_percent.py
-		python Make_plot_${NAME}.final_summary_counts.py
-		python Make_plot_${NAME}.final_summary_percent.py
+		if [ $GRAPHCHECK = true ]
+			then
+			python Make_plot_${NAME}.cluster_summary_counts.py
+			python Make_plot_${NAME}.cluster_summary_percent.py
+			python Make_plot_${NAME}.final_summary_counts.py
+			python Make_plot_${NAME}.final_summary_percent.py
+			fi
 		echo "Removing temporary files and organising files."
 		##sample specific temporary files deleted
 		while read p; do
@@ -543,18 +556,20 @@ do
 		mv $NAME.axis_label_max2.txt $OUTDIR/axis_label/$NAME.axis_label_max2.txt
 		mv $NAME.Plot.median.coverage.plot $OUTDIR/coverage/$NAME.Plot.median.coverage.plot
 		mv $NAME.intraclustcoverage.plot $OUTDIR/coverage/$NAME.intraclustcoverage.plot
-		mv $NAME.circos.plot.png $OUTDIR/plots/$NAME.circos.plot.png
-		mv $NAME.circos.plot.svg $OUTDIR/plots/$NAME.circos.plot.svg
 		mv $NAME.cluster_summary.txt $OUTDIR/summaries/$NAME.cluster_summary.txt
 		mv $NAME.final_summary.txt $OUTDIR/summaries/$NAME.final_summary.txt
 		mv Make_plot_${NAME}.cluster_summary_counts.py $OUTDIR/Domain_Dist_configs/Make_plot_${NAME}.cluster_summary_counts.py
 		mv Make_plot_${NAME}.cluster_summary_percent.py $OUTDIR/Domain_Dist_configs/Make_plot_${NAME}.cluster_summary_percent.py
 		mv Make_plot_${NAME}.final_summary_counts.py $OUTDIR/Domain_Dist_configs/Make_plot_${NAME}.final_summary_counts.py
 		mv Make_plot_${NAME}.final_summary_percent.py $OUTDIR/Domain_Dist_configs/Make_plot_${NAME}.final_summary_percent.py
-		mv $NAME.cluster_summary_counts.png $OUTDIR/Domain_Dist_plots/$NAME.cluster_summary_counts.png
-		mv $NAME.cluster_summary_percent.png $OUTDIR/Domain_Dist_plots/$NAME.cluster_summary_percent.png
-		mv $NAME.final_summary_counts.png $OUTDIR/Domain_Dist_plots/$NAME.final_summary_counts.png
-		mv $NAME.final_summary_percent.png $OUTDIR/Domain_Dist_plots/$NAME.final_summary_percent.png
+		if [ $GRAPHCHECK = true ]
+			then		
+			mv $NAME.circos.plot.png $OUTDIR/plots/$NAME.circos.plot.png
+			mv $NAME.cluster_summary_counts.png $OUTDIR/Domain_Dist_plots/$NAME.cluster_summary_counts.png
+			mv $NAME.cluster_summary_percent.png $OUTDIR/Domain_Dist_plots/$NAME.cluster_summary_percent.png
+			mv $NAME.final_summary_counts.png $OUTDIR/Domain_Dist_plots/$NAME.final_summary_counts.png
+			mv $NAME.final_summary_percent.png $OUTDIR/Domain_Dist_plots/$NAME.final_summary_percent.png
+			fi
 	fi
 	mv $NAME.fasta $OUTDIR/filedump/$NAME.fasta
 	mv $NAME.blast $OUTDIR/filedump/$NAME.blast
@@ -624,7 +639,6 @@ echo "Done!"
 echo ""
 echo "Circos plots are located in:"
 echo "$OUTDIR/plots/$NAME.circos.plot.png"
-echo "$OUTDIR/plots/$NAME.circos.plot.svg"
 echo ""
 echo "Summary files are located in:"
 echo "$OUTDIR/summaries/$NAME.cluster_summary.txt"
